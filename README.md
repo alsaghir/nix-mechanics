@@ -12,4 +12,5 @@ npm run dev
 
 ## License
 
-Content: [CC BY-SA 4.0](LICENSE).
+- Prose, diagrams, images: [CC BY-SA 4.0](LICENSE)
+- Code (site source and code snippets): [MIT](LICENSE-CODE)
