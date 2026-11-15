@@ -16,6 +16,14 @@
     {
       formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
 
+      checks = forAllSystems (
+        pkgs:
+        import ./nix/check-examples.nix {
+          inherit pkgs;
+          root = ./examples;
+        }
+      );
+
       devShells = forAllSystems (pkgs: {
         default = pkgs.mkShell {
           name = "nix-mechanics-devshell";

@@ -1,0 +1,67 @@
+---
+title: How examples are verified
+description: Every Nix example on this site is a real file that is evaluated and checked automatically.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import example from '../../../../examples/basics/let-in.nix?raw';
+import expected from '../../../../examples/basics/let-in.expected.nix?raw';
+import errorExample from '../../../../examples/basics/missing-attribute.nix?raw';
+import expectedError from '../../../../examples/basics/missing-attribute.expected-error?raw';
+
+This site has one rule: **no guessing**. Every Nix example shown here is a real
+file in the [`examples/`](%%repo-examples%%)
+folder, and its expected result is checked automatically. If an example ever
+stops producing what the page says, the check fails.
+
+## An example
+
+<Code code={example} lang="nix" title="examples/basics/let-in.nix" />
+
+## Verify it yourself
+
+From a clone of this repository:
+
+```sh
+nix eval --file examples/basics/let-in.nix
+```
+
+`nix eval` is a modern command. If it says `nix-command is disabled`, see
+[Enable the modern commands](/start-here/#enable-the-modern-commands).
+
+Expected output:
+
+<Code code={expected} lang="nix" title="examples/basics/let-in.expected.nix" />
+
+## Examples that should fail
+
+Errors are verified too. This example asks for an attribute that does not
+exist:
+
+<Code code={errorExample} lang="nix" title="examples/basics/missing-attribute.nix" />
+
+```sh
+nix eval --file examples/basics/missing-attribute.nix
+```
+
+The error output must contain these lines:
+
+<Code code={expectedError} lang="text" title="examples/basics/missing-attribute.expected-error" />
+
+The full message also shows where the error happened (file, line, and the
+code around it). Those parts depend on where your copy of the file lives, so
+the check only matches the lines above.
+
+## How the check works
+
+Every `NAME.nix` example has exactly one expectation next to it:
+
+- **`NAME.expected.nix`**: the value `nix eval --file NAME.nix` prints. Line
+  breaks and spacing may differ; the value is the same. The check imports
+  both files and compares them.
+- **`NAME.expected-error`**: lines that must appear in the error output.
+  The check runs `nix eval` and fails if it succeeds or if any line is missing.
+
+`nix flake check` runs both kinds and prints the expected and actual output
+when something differs. An example without an expectation also fails the
+check, so nothing on this site is shown unverified.
