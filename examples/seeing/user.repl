@@ -1,0 +1,53 @@
+nix-repl> user = import ./user.nix
+
+nix-repl> user
+{
+  address = { ... };
+  languages = [ ... ];
+  name = "Ada";
+}
+
+nix-repl> :p user
+{
+  address = { city = "London"; };
+  languages = [
+    "nix"
+    "rust"
+  ];
+  name = "Ada";
+}
+
+nix-repl> user.address.city
+"London"
+
+nix-repl> :t user.languages
+a list
+
+nix-repl> :l ./user.nix
+Added 3 variables.
+address, languages, name
+
+nix-repl> name
+"Ada"
+
+nix-repl> builtins.length languages
+2
+
+nix-repl> greet = who: "Hello, ${who}!"
+
+nix-repl> greet
+«lambda greet @ «string»:1:9»
+
+nix-repl> greet name
+"Hello, Ada!"
+
+nix-repl> :doc builtins.length
+Synopsis: builtins.length e
+
+Return the length of the list e.
+
+nix-repl> email
+error: undefined variable 'email'
+       at «string»:1:1:
+            1| email
+             | ^

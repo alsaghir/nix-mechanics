@@ -1,0 +1,3 @@
+… while evaluating the file
+… while calling the 'concatStringsSep' builtin
+error: attribute 'bob' missing

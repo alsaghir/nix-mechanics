@@ -54,14 +54,47 @@ the check only matches the lines above.
 
 ## How the check works
 
-Every `NAME.nix` example has exactly one expectation next to it:
+Every `NAME.nix` example has expectations next to it, either a value or
+errors:
 
 - **`NAME.expected.nix`**: the value `nix eval --file NAME.nix` prints. Line
   breaks and spacing may differ; the value is the same. The check imports
   both files and compares them.
-- **`NAME.expected-error`**: lines that must appear in the error output.
-  The check runs `nix eval` and fails if it succeeds or if any line is missing.
+- **`NAME.expected-error`**: lines that must appear, in this order, in the
+  error output. The check runs `nix eval` and fails if it succeeds or if any
+  line is missing.
+- **`NAME.expected-trace`**: the same with `nix eval --show-trace` (see
+  [Reading errors and tracing](/reading-errors/#the-full-trace---show-trace)).
 
-`nix flake check` runs both kinds and prints the expected and actual output
+REPL sessions and shell commands are checked too, by replaying them for real
+and requiring the output to match the file exactly:
+
+- **`NAME.repl`**: a `nix repl` session (see
+  [Seeing what Nix sees](/seeing-what-nix-sees/#nix-repl-explore-step-by-step)).
+  A first line like `$ nix repl --debugger` starts the REPL with those options.
+- **`NAME.console`**: shell commands, each with its output and exit code
+  (`[exit 0]` means success), like
+  [the `nix eval` examples](/seeing-what-nix-sees/#nix-eval-one-answer).
+
+Both ignore your `nix.conf`, since settings such as enabled features change
+what Nix prints, and enable flakes and the `nix` command, as
+[Start here](/start-here/) does. `<nixpkgs>` and a flake's `nixpkgs` input
+are the nixpkgs version this site pins.
+
+In a terminal, `nix` shows progress (like `evaluating …`) in a line that
+disappears when it finishes. The checks run without a terminal, where that
+progress would be printed as permanent lines, so they hide it the same way.
+What you see here is what stays on your screen.
+
+Commands run in a temporary copy of the example's folder, whose path changes
+on every run. Wherever it appears in the output, it is shown as
+**`/home/you/example`**. Shell commands also get a fresh, empty store, so
+they can add files and create profiles (as in
+[Generations](/nixos/changing-your-system/#generations-how-undo-works)), but can't
+build or download anything.
+
+`nix flake check` runs all kinds and prints the expected and actual output
 when something differs. An example without an expectation also fails the
-check, so nothing on this site is shown unverified.
+check, unless a transcript in the same folder uses it (like a
+`configuration.nix` or a `flake.nix`), so nothing on this site is shown
+unverified.

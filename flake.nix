@@ -6,25 +6,20 @@
   outputs =
     { nixpkgs, ... }:
     let
-      systems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "aarch64-darwin"
-      ];
-      forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
+      # The only system the examples are run and checked on.
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
     in
     {
-      formatter = forAllSystems (pkgs: pkgs.nixfmt-tree);
+      formatter.${system} = pkgs.nixfmt-tree;
 
-      checks = forAllSystems (
-        pkgs:
-        import ./nix/check-examples.nix {
-          inherit pkgs;
-          root = ./examples;
-        }
-      );
+      checks.${system} = import ./nix/check-examples.nix {
+        inherit pkgs nixpkgs;
+        lockFile = ./flake.lock;
+        root = ./examples;
+      };
 
-      devShells = forAllSystems (pkgs: {
+      devShells.${system} = {
         default = pkgs.mkShell {
           name = "nix-mechanics-devshell";
 
@@ -34,13 +29,17 @@
             git
             curl
             jq
+            (import ./nix/transcript.nix {
+              inherit pkgs nixpkgs;
+              lockFile = ./flake.lock;
+            })
           ];
 
           shellHook = ''
             export PATH="$PWD/node_modules/.bin:$PATH"
-            echo "✅ Nix Mechanics dev shell ready (node $(node --version))"
+            echo "✅ Nix Mechanics dev shell ready (node $(node --version))" >&2
           '';
         };
-      });
+      };
     };
 }

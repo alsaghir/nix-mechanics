@@ -1,0 +1,19 @@
+$ nix-instantiate --eval user.nix
+{ address = <CODE>; languages = <CODE>; name = "Ada"; }
+[exit 0]
+
+$ nix-instantiate --eval --strict user.nix
+{ address = { city = "London"; }; languages = [ "nix" "rust" ]; name = "Ada"; }
+[exit 0]
+
+$ nix-instantiate --eval user.nix -A name
+"Ada"
+[exit 0]
+
+$ nix-instantiate --eval --strict --json user.nix
+{"address":{"city":"London"},"languages":["nix","rust"],"name":"Ada"}
+[exit 0]
+
+$ nix-instantiate --eval --expr '1 + 2'
+3
+[exit 0]

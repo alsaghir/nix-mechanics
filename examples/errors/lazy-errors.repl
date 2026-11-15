@@ -1,0 +1,28 @@
+nix-repl> greetings = [ "Hello, Ada!" (throw "no user bob") ]
+
+nix-repl> builtins.length greetings
+2
+
+nix-repl> builtins.elemAt greetings 0
+"Hello, Ada!"
+
+nix-repl> greetings
+[
+  "Hello, Ada!"
+  «error: no user bob»
+]
+
+nix-repl> :p greetings
+[
+  "Hello, Ada!"
+  «error: no user bob»
+]
+
+nix-repl> builtins.deepSeq greetings "all good"
+error:
+       … while calling the 'throw' builtin
+         at «string»:1:30:
+            1| greetings = [ "Hello, Ada!" (throw "no user bob") ]
+             |                              ^
+
+       error: no user bob

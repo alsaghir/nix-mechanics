@@ -1,0 +1,23 @@
+$ nix eval --file user.nix
+{ address = { city = "London"; }; languages = [ "nix" "rust" ]; name = "Ada"; }
+[exit 0]
+
+$ nix eval --file user.nix name
+"Ada"
+[exit 0]
+
+$ nix eval --file user.nix address.city
+"London"
+[exit 0]
+
+$ nix eval --raw --file user.nix name
+Ada
+[exit 0]
+
+$ nix eval --json --file user.nix
+{"address":{"city":"London"},"languages":["nix","rust"],"name":"Ada"}
+[exit 0]
+
+$ nix eval --expr '1 + 2'
+3
+[exit 0]

@@ -1,0 +1,63 @@
+$ nix-store --add ./first
+/nix/store/w7vz84g50z5fin18ldsdqwnikad94h0c-first
+[exit 0]
+
+$ nix-env -p ./system --set /nix/store/w7vz84g50z5fin18ldsdqwnikad94h0c-first
+[exit 0]
+
+$ ls -d system*
+system
+system-1-link
+[exit 0]
+
+$ readlink system system-1-link
+system-1-link
+/nix/store/w7vz84g50z5fin18ldsdqwnikad94h0c-first
+[exit 0]
+
+$ nix-store --add ./second
+/nix/store/2w02li9il0m592i6674g4wqm55l5ykkh-second
+[exit 0]
+
+$ nix-env -p ./system --set /nix/store/2w02li9il0m592i6674g4wqm55l5ykkh-second
+[exit 0]
+
+$ ls -d system*
+system
+system-1-link
+system-2-link
+[exit 0]
+
+$ readlink system system-2-link
+system-2-link
+/nix/store/2w02li9il0m592i6674g4wqm55l5ykkh-second
+[exit 0]
+
+$ nix-env -p ./system --rollback
+switching profile from version 2 to 1
+[exit 0]
+
+$ readlink system
+system-1-link
+[exit 0]
+
+$ nix-env -p ./system --switch-generation 2
+switching profile from version 1 to 2
+[exit 0]
+
+$ readlink system
+system-2-link
+[exit 0]
+
+$ nix-env -p ./system --delete-generations 1
+removing profile version 1
+[exit 0]
+
+$ ls -d system*
+system
+system-2-link
+[exit 0]
+
+$ nix-store --gc --print-dead 2>/dev/null | grep -e -first -e -second
+/nix/store/w7vz84g50z5fin18ldsdqwnikad94h0c-first
+[exit 0]

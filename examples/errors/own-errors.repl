@@ -1,0 +1,32 @@
+nix-repl> age = -1
+
+nix-repl> if age < 0 then throw "age must not be negative, got ${toString age}" else age
+error:
+       … while calling the 'throw' builtin
+         at «string»:1:17:
+            1| if age < 0 then throw "age must not be negative, got ${toString age}" else age
+             |                 ^
+
+       error: age must not be negative, got -1
+
+nix-repl> assert age >= 0; age
+error: assertion '(! (__lessThan age 0))' failed
+       at «string»:1:1:
+            1| assert age >= 0; age
+             | ^
+
+nix-repl> assert age >= 0 || throw "age must not be negative, got ${toString age}"; age
+error:
+       … in the condition of the assert statement
+         at «string»:1:1:
+            1| assert age >= 0 || throw "age must not be negative, got ${toString age}"; age
+             | ^
+
+       … in the right operand of the OR (||) operator
+         at «string»:1:17:
+            1| assert age >= 0 || throw "age must not be negative, got ${toString age}"; age
+             |                 ^
+
+       (stack trace truncated; use '--show-trace' to show the full, detailed trace)
+
+       error: age must not be negative, got -1

@@ -1,0 +1,111 @@
+---
+title: Seeing what Nix sees
+description: The commands that evaluate Nix code, so you can check any value yourself instead of guessing.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import user from '../../../examples/seeing/user.nix?raw';
+import transcript from '../../../examples/seeing/user.repl?raw';
+import evalConsole from '../../../examples/seeing/eval.console?raw';
+import instantiateConsole from '../../../examples/seeing/instantiate.console?raw';
+
+Nix code is a description of a **value**. Evaluating it computes that value.
+Whenever you are unsure what some Nix code means, don't guess: evaluate it and
+look. This page shows the three commands that do that.
+
+| Command | Use it to | Needs `nix-command` |
+| --- | --- | --- |
+| `nix repl` | Explore interactively, step by step | No |
+| `nix eval` | Get one answer from a file or expression | Yes |
+| `nix-instantiate --eval` | The same, with the older command | No |
+
+<Aside>
+  `nix eval` fails with `experimental Nix feature 'nix-command' is disabled`
+  until you [enable the modern commands](/start-here/#enable-the-modern-commands).
+  `nix repl` and `nix-instantiate` work either way.
+</Aside>
+
+All examples on this page use this file. Save it as `user.nix` and run the
+commands from the same folder.
+
+<Code code={user} lang="nix" title="examples/seeing/user.nix" />
+
+## `nix eval`: one answer
+
+<Code code={evalConsole} lang="console" title="examples/seeing/eval.console" />
+
+- `--file user.nix` alone prints the whole value.
+- An attribute path after it selects part of the value: `address.city` means
+  "the `city` attribute of `address`".
+- `--raw` prints a string without quotes.
+- `--json` prints JSON, handy with tools like `jq`.
+- `--expr` evaluates the expression you type instead of a file.
+
+`[exit 0]` is the command's exit code (0 means success). Nix doesn't print it;
+it's shown here because the examples are checked against it. In a shell, see
+it with `echo $?` right after the command.
+
+Full reference: [`nix eval`](%%nix-manual-eval%%).
+
+## `nix repl`: explore step by step
+
+`nix repl` keeps state between lines, so you can load a file, look inside it,
+define helpers and try them. This transcript is replayed in a real `nix repl`
+by the [example check](/about/verified-examples/), so every output below is
+exactly what Nix prints:
+
+<Code code={transcript} lang="console" title="examples/seeing/user.repl" />
+
+What it shows:
+
+- `user = import ./user.nix` stores the file's value in a variable.
+- `user` prints `{ ... }` and `[ ... ]` for nested values: Nix is **lazy** and
+  only computes what is needed. That isn't an error, the values just haven't
+  been looked at yet.
+- `:p` (print) evaluates everything and prints it in full.
+- `:t` tells you the type of a value.
+- `:l ./user.nix` (load) adds every attribute of the file as a variable, so
+  `name` works directly.
+- A function prints as `«lambda ...»`. Call it to see what it returns.
+- `:doc` shows documentation for a built-in function.
+- An error doesn't end the session, so fix the input and try again.
+
+Starting `nix repl --file user.nix` is the same as running `:l ./user.nix`
+first.
+
+### REPL commands
+
+```plaintext
+:?              list all commands
+:l <path>       load a file and add its attributes as variables
+:r              reload the files loaded with :l (after editing them)
+:p <expr>       evaluate and print everything, not just the top level
+:t <expr>       show the type of a value
+:doc <expr>     show documentation of a built-in function
+:q              quit (or Ctrl+D)
+```
+
+Full reference: [`nix repl`](%%nix-manual-repl%%).
+
+## `nix-instantiate --eval`: the older command
+
+`nix-instantiate --eval` evaluates without the `nix-command` feature. It
+prints laziness differently: values that haven't been computed show as
+`<CODE>`. Add `--strict` to evaluate everything, like `:p` in the REPL. `-A`
+selects an attribute:
+
+<Code code={instantiateConsole} lang="console" title="examples/seeing/instantiate.console" />
+
+Full reference: [`nix-instantiate`](%%nix-manual-instantiate%%).
+
+## Learn more
+
+- [Evaluation](%%nix-manual-evaluation%%): how and when Nix evaluates, including
+  laziness.
+- [The Nix language](%%nix-manual-language%%): every part of the language,
+  each part testable with the commands above.
+
+## Next
+
+- [Reading errors and tracing](/reading-errors/): what to do when evaluation
+  fails.

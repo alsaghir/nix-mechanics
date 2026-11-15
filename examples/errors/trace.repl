@@ -1,0 +1,22 @@
+nix-repl> builtins.trace "checking" 42
+trace: checking
+42
+
+nix-repl> x = builtins.trace "computing x" (1 + 1)
+
+nix-repl> x
+trace: computing x
+2
+
+nix-repl> x
+2
+
+nix-repl> user = { name = "Ada"; address = { city = "London"; }; }
+
+nix-repl> builtins.trace user true
+trace: { address = «thunk»; name = "Ada"; }
+true
+
+nix-repl> builtins.deepSeq user (builtins.trace user true)
+trace: { address = { city = "London"; }; name = "Ada"; }
+true

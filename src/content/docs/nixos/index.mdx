@@ -1,0 +1,21 @@
+---
+title: NixOS
+description: The NixOS track. Your whole system is described in Nix, changed with nixos-rebuild, and every change can be undone.
+---
+
+This track assumes the foundations:
+[Start here](/start-here/), [Seeing what Nix sees](/seeing-what-nix-sees/)
+and [Reading errors and tracing](/reading-errors/).
+
+On NixOS, the system itself (packages, services, users, boot) is built from
+your configuration in `/etc/nixos`. You don't change the system by hand: you
+change the configuration, check it, and rebuild. Every rebuild keeps the
+previous system, so every change can be undone.
+
+## In this track
+
+1. [Changing your system, and undoing it](/nixos/changing-your-system/):
+   edit, check, apply, roll back.
+
+Coming next: turning `/etc/nixos` into a flake, so the commands match the
+rest of this site.

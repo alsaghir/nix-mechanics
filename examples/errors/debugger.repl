@@ -1,0 +1,69 @@
+$ nix repl --debugger
+nix-repl> greet = user: "Hello, ${user.name}!"
+
+nix-repl> greet { nickname = "ada"; }
+error: attribute 'name' missing
+       at «string»:1:25:
+            1| greet = user: "Hello, ${user.name}!"
+             |                         ^
+
+nix-repl> :env
+Env level 0
+static: user 
+
+Env level 1
+static: greet 
+
+Env level 2
+abort baseNameOf break builtins derivation derivationStrict dirOf false fetchGit fetchMercurial fetchTarball fetchTree fromTOML import isNull map null placeholder removeAttrs scopedImport throw toString true 
+
+nix-repl> user
+{ nickname = "ada"; }
+
+nix-repl> :bt
+0: error: attribute 'name' missing
+«string»:1:25
+
+     1| greet = user: "Hello, ${user.name}!"
+      |                         ^
+
+1: error: Fake frame for debugging purposes
+«string»:1:25
+
+     1| greet = user: "Hello, ${user.name}!"
+      |                         ^
+
+2: while evaluating the attribute 'name'
+«string»:1:25
+
+     1| greet = user: "Hello, ${user.name}!"
+      |                         ^
+
+3: while calling 'greet'
+«string»:1:9
+
+     1| greet = user: "Hello, ${user.name}!"
+      |         ^
+
+4: while calling a function
+«string»:1:1
+
+     1| greet { nickname = "ada"; }
+      | ^
+
+nix-repl> :c
+error: attribute 'name' missing
+       at «string»:1:25:
+            1| greet = user: "Hello, ${user.name}!"
+             |                         ^
+
+nix-repl> double = n: builtins.break (n * 2)
+
+nix-repl> double 21
+info: breakpoint reached
+
+nix-repl> n
+21
+
+nix-repl> :c
+42

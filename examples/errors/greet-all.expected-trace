@@ -1,0 +1,7 @@
+… while evaluating the file
+… from call site
+… while calling 'greetAll'
+… while calling the 'concatStringsSep' builtin
+… while calling anonymous lambda
+… while calling 'greet'
+error: attribute 'bob' missing

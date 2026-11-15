@@ -1,0 +1,166 @@
+---
+title: Reading errors and tracing
+description: How to read a Nix error, get the full trace, print values while evaluating, and stop inside a failing evaluation.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import greetAll from '../../../examples/errors/greet-all.nix?raw';
+import greetAllError from '../../../examples/errors/greet-all.expected-error?raw';
+import greetAllTrace from '../../../examples/errors/greet-all.expected-trace?raw';
+import lazyErrors from '../../../examples/errors/lazy-errors.repl?raw';
+import exitCodes from '../../../examples/errors/exit-codes.console?raw';
+import trace from '../../../examples/errors/trace.repl?raw';
+import ownErrors from '../../../examples/errors/own-errors.repl?raw';
+import debuggerSession from '../../../examples/errors/debugger.repl?raw';
+
+A Nix error is evidence, not noise: it says **what** failed, **where**, and
+**how evaluation got there**. This page shows how to read it, how to get more
+of it, and how to look inside a failing evaluation instead of guessing.
+
+The commands are the ones from [Seeing what Nix sees](/seeing-what-nix-sees/).
+
+## Reading an error
+
+This file greets two users, but only one exists:
+
+<Code code={greetAll} lang="nix" title="examples/errors/greet-all.nix" />
+
+`nix eval --file greet-all.nix` fails, and its error output contains these
+lines, in this order:
+
+<Code code={greetAllError} lang="text" title="examples/errors/greet-all.expected-error" />
+
+Read it from the **bottom up**:
+
+1. The last `error:` line is **what** went wrong: `attribute 'bob' missing`.
+2. The `at <file>:<line>:<column>:` line under it, with the code and a `^`,
+   is **where**. (Not shown above: it contains your file's path.)
+3. Each `…` line above it is a step of **how** Nix got there, from the
+   outermost (the file) to the innermost.
+
+## The full trace: `--show-trace`
+
+By default Nix shows only some of the steps. Add `--show-trace` to see all of
+them:
+
+```sh
+nix eval --show-trace --file greet-all.nix
+```
+
+Now the output also names the functions that were called, `greetAll` and
+`greet`, which is usually what you need to find the line to fix:
+
+<Code code={greetAllTrace} lang="text" title="examples/errors/greet-all.expected-trace" />
+
+When Nix leaves steps out, it says so:
+`(stack trace truncated; use '--show-trace' to show the full, detailed trace)`.
+In `nix repl`, use `:te` to switch full traces on or off.
+
+Full reference: [`show-trace`](%%nix-manual-show-trace%%).
+
+## Errors that don't stop evaluation
+
+Nix is lazy: a value that fails is only a problem when something uses it.
+Here one list element throws an error, yet most things still work:
+
+<Code code={lazyErrors} lang="console" title="examples/errors/lazy-errors.repl" />
+
+- `builtins.length` and `builtins.elemAt greetings 0` succeed because they
+  never look at the failing element.
+- Printing the list shows `«error: ...»` in place of the element instead of
+  failing, even with `:p`.
+- `builtins.deepSeq` evaluates everything, so the error surfaces.
+
+<Aside type="caution">
+  `nix eval` prints values the same way: an error inside the result shows as
+  `«error: ...»` and the command still **succeeds** (exit code 0). Don't
+  rely on "no error message" to mean "no error". `nix eval --json` and
+  `nix-instantiate --eval --strict` fail instead, because they must evaluate
+  everything.
+</Aside>
+
+<Code code={exitCodes} lang="console" title="examples/errors/exit-codes.console" />
+
+## Printing values while evaluating: `builtins.trace`
+
+`builtins.trace message value` prints `trace: message` and returns `value`
+unchanged, so you can wrap any expression with it:
+
+<Code code={trace} lang="console" title="examples/errors/trace.repl" />
+
+- A trace only prints when its value is **used**: defining `x` printed
+  nothing, and the second `x` printed nothing because the value was already
+  computed.
+- Nested values print as `«thunk»` (not computed yet). Wrap it in
+  `builtins.deepSeq value (...)` to compute everything first.
+
+Full reference: [`builtins.trace`](%%nix-manual-builtin-trace%%),
+[`builtins.deepSeq`](%%nix-manual-builtin-deepseq%%).
+
+## Writing your own error messages
+
+When your code knows a value is wrong, say so. `throw` fails with your
+message; `assert` fails when a condition is false:
+
+<Code code={ownErrors} lang="console" title="examples/errors/own-errors.repl" />
+
+A plain `assert` only shows the condition, rewritten into internal names
+like `__lessThan`. Use `assert condition || throw "message";` to get a readable
+message instead.
+
+Full reference: [`throw`](%%nix-manual-builtin-throw%%).
+
+## Stopping inside the error: `--debugger`
+
+With `--debugger`, Nix stops where the error happens and opens a REPL **in
+that place**, so you can look at the variables the failing code saw:
+
+<Code code={debuggerSession} lang="console" title="examples/errors/debugger.repl" />
+
+- `:env` lists the variables in scope, innermost first: `user` (the function
+  argument), then the REPL's own variables, then the built-ins.
+- Typing `user` shows the value that was passed: it has `nickname`, not
+  `name`. That is the bug.
+- `:bt` shows the same steps as the trace, numbered. The `Fake frame for
+  debugging purposes` entry is internal; ignore it.
+- `:c` continues, which ends the evaluation with the original error.
+- `builtins.break value` stops there even without an error, like a
+  breakpoint, and `:c` continues with `value`.
+
+The same works for files: `nix eval --debugger --file greet-all.nix`.
+
+### Debugger commands
+
+```plaintext
+:env            show the variables in scope
+:bt             show the trace, numbered
+:st <n>         go to step <n> of the trace
+:c              continue (until the end, the next error, or builtins.break)
+:s              go one step
+:q              quit
+```
+
+Full reference: [`builtins.break`](%%nix-manual-builtin-break%%), and
+`--debugger` under the common evaluation options in
+[`nix eval`](%%nix-manual-eval%%).
+
+## Cheat sheet
+
+```plaintext
+read an error       bottom error: line = what, at ... = where, … lines = how
+full trace          --show-trace  (nix repl: :te)
+force everything    builtins.deepSeq value result  (or --json / --strict)
+print a value       builtins.trace value result
+fail with a message throw "..."   /   assert cond || throw "...";
+stop and look       --debugger, then :env, :bt, :c
+breakpoint          builtins.break value  (with --debugger)
+```
+
+## Next
+
+That completes the foundations. From here, pick the track for your setup:
+
+- [NixOS](/nixos/): your whole system is configured with Nix (path A or C
+  in [Start here](/start-here/#pick-your-path)).
+- [Nix on another distro / WSL](/other-distro/): Nix next to your existing
+  system (path B).

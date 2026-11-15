@@ -1,0 +1,174 @@
+---
+title: Changing your system, and undoing it
+description: What nixos-rebuild does with configuration.nix, how to check a change before applying it, and how generations make every change reversible.
+---
+
+import { Aside, Code } from '@astrojs/starlight/components';
+import configuration from '../../../../examples/first-change/configuration.nix?raw';
+import checkConsole from '../../../../examples/first-change/check.console?raw';
+import generations from '../../../../examples/generations/generations.console?raw';
+
+On NixOS you don't change the system by hand. You edit
+`/etc/nixos/configuration.nix` and run `nixos-rebuild`. Every applied change
+keeps the previous system around, so you can always go back.
+
+This page follows one change through that loop:
+
+1. **Edit** `/etc/nixos/configuration.nix`.
+2. **Check** the result: seconds, changes nothing.
+3. **Apply** with `sudo nixos-rebuild switch`.
+4. **Undo** if needed: `sudo nixos-rebuild switch --rollback`, or pick an
+   older system in the boot menu.
+
+<Aside>
+  This page assumes the setup the installer creates: a
+  `/etc/nixos/configuration.nix` and no `/etc/nixos/flake.nix`. If
+  `flake.nix` exists, `nixos-rebuild` uses it instead, and the check command
+  below differs.
+</Aside>
+
+## 1. Edit
+
+The file the installer generates contains commented-out suggestions, such as
+`# programs.firefox.enable = true;`. Removing the `#` is a change. This example
+keeps only the lines that matter:
+
+<Code code={configuration} lang="nix" title="examples/first-change/configuration.nix" />
+
+## 2. Check before you apply
+
+Ask Nix for the value the option will have. This doesn't build or change
+anything:
+
+<Code code={checkConsole} lang="console" title="examples/first-change/check.console" />
+
+- `<nixpkgs/nixos>` is the same entry point `nixos-rebuild` evaluates.
+- `config.programs.firefox.enable` is the final value of that option, after
+  NixOS has combined all its modules with your file. Any option works the
+  same way.
+- `-I nixos-config=./configuration.nix` points at the example file. On your
+  machine, leave it out: `nixos-config` already means
+  `/etc/nixos/configuration.nix` (NixOS puts it in `NIX_PATH` while channels
+  are enabled, the default).
+- The second file has a typo, `enabled`. NixOS rejects options that don't
+  exist, names the file, and suggests the right name. Read it from the bottom,
+  as in [Reading errors](/reading-errors/).
+- `/home/you/example` is the folder the example ran in (see
+  [Verified examples](/about/verified-examples/)).
+
+To explore interactively, `nixos-rebuild repl` opens `nix repl` on the same
+configuration: type `config.programs.firefox.enable`.
+
+## 3. Apply
+
+`sudo nixos-rebuild switch` runs three steps, as its
+[source code](%%nixos-rebuild-source%%) shows:
+
+1. **Build** the whole system, as one store path:
+   `nix-build '<nixpkgs/nixos>' -A system` (`system` is
+   `config.system.build.toplevel`).
+2. **Record** it as a new generation:
+   `nix-env -p /nix/var/nix/profiles/system --set <that path>`.
+3. **Activate** it: `<that path>/bin/switch-to-configuration switch` starts
+   and stops services and updates the boot menu.
+
+The other actions do some of those steps:
+
+| Command | Builds | New generation | Running system changes | Next boot uses it |
+| --- | --- | --- | --- | --- |
+| `nixos-rebuild build` | yes, as `./result` | no | no | no |
+| `sudo nixos-rebuild test` | yes | no | yes | no |
+| `sudo nixos-rebuild boot` | yes | yes | no | yes |
+| `sudo nixos-rebuild switch` | yes | yes | yes | yes |
+
+`test` is the cautious option: if the change breaks something, a reboot
+brings back the previous system. Details:
+[Changing the configuration](%%nixos-manual-changing-config%%).
+
+## Generations: how undo works
+
+A **profile** is a symlink to its current **generation**, and each generation
+is a numbered symlink to a store path. NixOS's profile is
+`/nix/var/nix/profiles/system`. On your machine:
+
+```console
+$ readlink /nix/var/nix/profiles/system
+```
+
+prints `system-N-link`, where `N` is the current generation.
+
+The transcript below runs the same `nix-env` commands on a profile in a
+scratch folder. Two small files stand in for the systems `nixos-rebuild`
+would build:
+
+<Code code={generations} lang="console" title="examples/generations/generations.console" />
+
+- `--set` adds the next generation and points the profile at it. This is step
+  2 of `switch`.
+- `--rollback` only moves the `system` symlink back. Nothing is rebuilt or
+  deleted, which is why it's instant.
+- A store path stays as long as a generation points at it. After
+  `--delete-generations`, the first system is garbage (`--print-dead`), and
+  garbage collection may remove it.
+
+<Aside type="caution">
+  Trying this in a scratch folder is safe: it adds two small files to your
+  store. Don't run `--set` or `--delete-generations` on
+  `/nix/var/nix/profiles/system` yourself; `nixos-rebuild` and
+  `nix-collect-garbage` do that and also update the boot menu.
+</Aside>
+
+More on profiles: [Profiles](%%nix-manual-profiles%%),
+[`nix-env --rollback`](%%nix-manual-env-rollback%%).
+
+## 4. Undo
+
+| Situation | What to do |
+| --- | --- |
+| The system runs, but the change is bad | `sudo nixos-rebuild switch --rollback` |
+| The system doesn't boot or log in | Pick an older generation in the boot menu |
+| You want to see what's there | `nixos-rebuild list-generations` |
+
+`switch --rollback` runs `nix-env --rollback` on the system profile, then
+activates that generation, like step 3. The boot menu (GRUB or systemd-boot)
+lists previous generations too. Details:
+[Rolling back](%%nixos-manual-rollback%%).
+
+<Aside type="caution">
+  Rolling back doesn't change `/etc/nixos/configuration.nix`. Your edit is
+  still there, and the next `switch` applies it again. Fix or remove the edit
+  too. Rolling back also doesn't touch your files in `/home`: a generation is
+  the system, not your data.
+</Aside>
+
+## Cleaning up
+
+Each generation keeps its system in the store, so disk use grows.
+
+```plaintext
+free unused store paths                 sudo nix-collect-garbage
+also delete old generations (all)       sudo nix-collect-garbage -d
+delete generations older than 14 days   sudo nix-collect-garbage --delete-older-than 14d
+```
+
+Deleted generations can't be rolled back to. To clean up automatically, see
+`nix.gc.automatic` in [Cleaning the Nix store](%%nixos-manual-gc%%). The
+boot menu can be limited with `boot.loader.systemd-boot.configurationLimit`
+(or `boot.loader.grub.configurationLimit`). References:
+[`nix-collect-garbage`](%%nix-manual-collect-garbage%%),
+[Garbage collection](%%nix-manual-gc%%).
+
+## Cheat sheet
+
+```plaintext
+check an option        nix eval -f '<nixpkgs/nixos>' config.OPTION
+explore the config     nixos-rebuild repl
+build only             nixos-rebuild build            (./result, no changes)
+try until reboot       sudo nixos-rebuild test
+apply                  sudo nixos-rebuild switch      (new generation)
+apply at next boot     sudo nixos-rebuild boot        (new generation)
+list generations       nixos-rebuild list-generations
+undo                   sudo nixos-rebuild switch --rollback
+undo when unbootable   pick an older generation in the boot menu
+clean up               sudo nix-collect-garbage -d    (no rollback to deleted ones)
+```

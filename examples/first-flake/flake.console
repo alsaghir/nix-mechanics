@@ -1,0 +1,24 @@
+$ nix flake show
+path:/home/you/example?lastModified=1&narHash=sha256-hoWasQPFfCbV59XXh5xn/oR3ohBjl3tuKukwYoA2lCE%3D
+└───packages
+    └───x86_64-linux
+        └───default: package 'hello-2.12.3'
+[exit 0]
+
+$ nix eval .#packages.x86_64-linux.default.name
+"hello-2.12.3"
+[exit 0]
+
+$ nix flake metadata
+Resolved URL:  path:/home/you/example
+Locked URL:    path:/home/you/example?lastModified=1&narHash=sha256-hoWasQPFfCbV59XXh5xn/oR3ohBjl3tuKukwYoA2lCE%3D
+Description:   My first flake
+Path:          /nix/store/x5kyfbc5rz9ziqrc5m5dj3razrx50sxg-source
+Last modified: 1970-01-01 00:00:01
+Fingerprint:   c20ee8c439359ceb2e4829416e03bdcbe3b5f04db395b2a8781664738266f916
+Inputs:
+└───nixpkgs: github:NixOS/nixpkgs/d4f25a3e562008648d45bcf2d70bcc7422cad84e?narHash=sha256-x9sADJvoVG0L6RejZB%2B/BB4YiGZFBZrfTlhF4uBq1tQ%3D (2026-11-11 08:42:49)
+[exit 0]
+
+$ nix flake check
+[exit 0]

@@ -1,0 +1,30 @@
+---
+title: Nix on another distro / WSL
+description: The track for Nix next to your existing Linux distribution or WSL. Dev environments, user packages and home configuration, all from a flake.nix.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+This track assumes the foundations:
+[Start here](/start-here/), [Seeing what Nix sees](/seeing-what-nix-sees/)
+and [Reading errors and tracing](/reading-errors/).
+
+Here Nix runs **next to** your distribution. It keeps everything it builds in
+`/nix/store` and leaves your distribution's packages alone; your distribution
+still manages the system. What Nix gives you on top:
+
+- **Dev environments** per project, with exactly the tools that project needs.
+- **Packages for your user**, with history and rollback.
+- **Your home configuration** (dotfiles, programs) with home-manager.
+
+All of them start from a `flake.nix`.
+
+<Aside>
+  Nix also runs on macOS and on ARM machines, and the commands are the same.
+  The examples on this site are only run and checked on x86_64 Linux.
+</Aside>
+
+## In this track
+
+Coming next: **your first flake**, a minimal `flake.nix` you create, inspect
+and check yourself.

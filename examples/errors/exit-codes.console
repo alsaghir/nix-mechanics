@@ -1,0 +1,27 @@
+$ nix eval --expr '[ "Hello, Ada!" (throw "no user bob") ]'
+[ "Hello, Ada!" «error: no user bob» ]
+[exit 0]
+
+$ nix eval --json --expr '[ "Hello, Ada!" (throw "no user bob") ]'
+error:
+       … while evaluating list element at index 1
+
+       … while calling the 'throw' builtin
+         at «string»:1:18:
+            1| [ "Hello, Ada!" (throw "no user bob") ]
+             |                  ^
+
+       error: no user bob
+[exit 1]
+
+$ nix-instantiate --eval --strict --expr '[ "Hello, Ada!" (throw "no user bob") ]'
+error:
+       … while evaluating list element at index 1
+
+       … while calling the 'throw' builtin
+         at «string»:1:18:
+            1| [ "Hello, Ada!" (throw "no user bob") ]
+             |                  ^
+
+       error: no user bob
+[exit 1]
